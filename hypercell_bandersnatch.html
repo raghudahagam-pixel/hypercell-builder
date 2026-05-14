@@ -1,0 +1,825 @@
+
+<!DOCTYPE html>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:ital,wght@0,400;1,400&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: rgba(255,255,255,0.08);
+    --accent: #6ee7b7;
+    --accent2: #818cf8;
+    --danger: #f87171;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --gold: #fbbf24;
+  }
+
+  body { background: transparent; font-family: 'Syne', sans-serif; color: var(--text); }
+
+  #root {
+    min-height: 600px;
+    background: var(--bg);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .scene {
+    display: none;
+    flex-direction: column;
+    min-height: 600px;
+  }
+  .scene.active { display: flex; }
+
+  .scene-header {
+    padding: 28px 32px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ep-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 4px 10px;
+    border-radius: 4px;
+  }
+
+  .progress-bar {
+    flex: 1;
+    height: 2px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+
+  .scene-body {
+    padding: 32px 32px 0;
+    flex: 1;
+  }
+
+  .context-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    background: rgba(110, 231, 183, 0.08);
+    border: 1px solid rgba(110, 231, 183, 0.2);
+    padding: 5px 12px;
+    border-radius: 20px;
+  }
+  .context-tag.warn {
+    color: var(--gold);
+    background: rgba(251,191,36,0.08);
+    border-color: rgba(251,191,36,0.2);
+  }
+  .context-tag.bad {
+    color: var(--danger);
+    background: rgba(248,113,113,0.08);
+    border-color: rgba(248,113,113,0.2);
+  }
+  .context-tag.purple {
+    color: var(--accent2);
+    background: rgba(129,140,248,0.08);
+    border-color: rgba(129,140,248,0.2);
+  }
+
+  .scene-title {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 16px;
+    color: #fff;
+  }
+
+  .scene-body p {
+    font-size: 15px;
+    line-height: 1.75;
+    color: rgba(226, 232, 240, 0.8);
+    margin-bottom: 14px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 400;
+  }
+
+  .scene-body p strong {
+    color: #fff;
+    font-weight: 400;
+    font-style: italic;
+  }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 20px 0;
+  }
+
+  .stat-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .stat-value {
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+  }
+  .stat-value.red { color: var(--danger); }
+  .stat-value.green { color: var(--accent); }
+  .stat-value.amber { color: var(--gold); }
+
+  .choices {
+    padding: 24px 32px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .choice-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .choice-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: all 0.2s ease;
+    width: 100%;
+  }
+
+  .choice-btn:hover {
+    background: var(--surface2);
+    border-color: rgba(255,255,255,0.18);
+    transform: translateX(4px);
+  }
+
+  .choice-btn.primary {
+    border-color: rgba(110, 231, 183, 0.3);
+    background: rgba(110, 231, 183, 0.04);
+  }
+  .choice-btn.primary:hover {
+    background: rgba(110, 231, 183, 0.1);
+    border-color: rgba(110, 231, 183, 0.5);
+  }
+
+  .choice-btn.secondary {
+    border-color: rgba(129,140,248, 0.3);
+    background: rgba(129,140,248, 0.04);
+  }
+  .choice-btn.secondary:hover {
+    background: rgba(129,140,248, 0.1);
+    border-color: rgba(129,140,248, 0.5);
+  }
+
+  .choice-btn.danger-btn {
+    border-color: rgba(248,113,113, 0.25);
+    background: rgba(248,113,113, 0.04);
+  }
+  .choice-btn.danger-btn:hover {
+    background: rgba(248,113,113, 0.1);
+    border-color: rgba(248,113,113, 0.4);
+  }
+
+  .choice-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    min-width: 20px;
+  }
+
+  .choice-arrow {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 18px;
+    transition: transform 0.2s;
+  }
+  .choice-btn:hover .choice-arrow { transform: translateX(4px); color: var(--text); }
+
+  .outcome-panel {
+    margin: 0 32px 24px;
+    border-radius: 12px;
+    padding: 18px 20px;
+    border: 1px solid;
+  }
+  .outcome-panel.good {
+    background: rgba(110,231,183,0.06);
+    border-color: rgba(110,231,183,0.25);
+  }
+  .outcome-panel.bad {
+    background: rgba(248,113,113,0.06);
+    border-color: rgba(248,113,113,0.25);
+  }
+  .outcome-panel.neutral {
+    background: rgba(251,191,36,0.06);
+    border-color: rgba(251,191,36,0.25);
+  }
+  .outcome-title {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .outcome-panel.good .outcome-title { color: var(--accent); }
+  .outcome-panel.bad .outcome-title { color: var(--danger); }
+  .outcome-panel.neutral .outcome-title { color: var(--gold); }
+  .outcome-panel p { font-family: 'DM Mono', monospace; font-size: 13px; line-height: 1.6; color: rgba(226,232,240,0.85); margin: 0; }
+
+  .hypercell-reveal {
+    margin: 0 32px 20px;
+    background: linear-gradient(135deg, rgba(129,140,248,0.08), rgba(110,231,183,0.04));
+    border: 1px solid rgba(129,140,248,0.25);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .hc-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 10px;
+  }
+  .hc-elements {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .hc-chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+  .hc-chip.active {
+    background: rgba(110,231,183,0.1);
+    border-color: rgba(110,231,183,0.4);
+    color: var(--accent);
+  }
+  .hc-chip.inactive {
+    background: rgba(255,255,255,0.03);
+    border-color: rgba(255,255,255,0.08);
+    color: var(--muted);
+  }
+
+  .final-cta {
+    margin: 0 32px 32px;
+    background: var(--surface2);
+    border: 1px solid rgba(110,231,183,0.2);
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+  }
+  .final-cta h3 {
+    font-size: 18px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .final-cta p {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .cta-btn {
+    background: var(--accent);
+    color: #0a0f0a;
+    border: none;
+    border-radius: 10px;
+    padding: 13px 28px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    margin-right: 10px;
+    transition: all 0.2s;
+  }
+  .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(110,231,183,0.2); }
+  .restart-btn {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 20px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .restart-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+  .divider { height: 1px; background: var(--border); margin: 0 32px; }
+
+  .scene-img {
+    width: 100%;
+    height: 120px;
+    background: linear-gradient(135deg, #0f172a, #1e1b4b);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .grid-overlay {
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(rgba(129,140,248,0.05) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(129,140,248,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .scene-img-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: rgba(129,140,248,0.6);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    z-index: 1;
+  }
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+    margin-right: 10px;
+    z-index: 1;
+    flex-shrink: 0;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+  .fade-in { animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
+<div id="root">
+
+  <!-- SCENE 0: Opening -->
+  <div class="scene active fade-in" id="scene-0">
+    <div class="scene-header">
+      <span class="ep-badge">Hypercell / Interactive</span>
+      <div class="progress-bar"><div class="progress-fill" style="width:5%"></div></div>
+    </div>
+    <div class="scene-img">
+      <div class="grid-overlay"></div>
+      <div class="pulse-dot"></div>
+      <span class="scene-img-label">Lancaster, TX · STACK DFW02 · Day 1</span>
+    </div>
+    <div class="scene-body fade-in">
+      <div class="context-tag">Role: VP Talent Acquisition · Company: STACK Infrastructure</div>
+      <h2 class="scene-title">Your phone lights up at 6:47 a.m.</h2>
+      <p>It's Marcus, your SVP of Construction Operations. <strong>"We just closed the Lancaster campus deal. 340 workers on-site by Q3. That's 14 weeks."</strong></p>
+      <p>You open your laptop. The Dallas–Fort Worth construction market is already overheated — three other hyperscale builds are pulling from the same labor pool. You need electricians, HVAC techs, MEP engineers, and commissioning specialists. Most of them don't exist locally in the numbers you need.</p>
+      <p>Your existing ATS was built for corporate hiring. It has one job template, one sourcing workflow, one screening rubric. You have 23 distinct roles to fill across 4 different trade categories.</p>
+    </div>
+    <div class="divider"></div>
+    <div class="choices">
+      <div class="choice-label">What's your first move?</div>
+      <button class="choice-btn primary" onclick="go('scene-1a')">
+        <span class="choice-num">A</span>
+        <span>Map each role's sourcing context separately before touching the ATS</span>
+        <span class="choice-arrow">→</span>
+      </button>
+      <button class="choice-btn danger-btn" onclick="go('scene-1b')">
+        <span class="choice-num">B</span>
+        <span>Post all 23 roles immediately — same template, maximize speed</span>
+        <span class="choice-arrow">→</span>
+      </button>
+      <button class="choice-btn secondary" onclick="go('scene-1c')">
+        <span class="choice-num">C</span>
+        <span>Call three staffing agencies and ask them to handle it</span>
+        <span class="choice-arrow">→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- SCENE 1A: Good path — role mapping -->
+  <div class="scene fade-in" id="scene-1a">
+    <div class="scene-header">
+      <span class="ep-badge">Chapter 2 of 5</span>
+      <div class="progress-bar"><div class="progress-fill" style="width:28%"></div></div>
+    </div>
+    <div class="scene-body fade-in">
+      <div class="context-tag">Hypercell element unlocked: Role Context</div>
+      <h2 class="scene-title">You spend 90 minutes mapping the work, not the job titles.</h2>
+      <p>A licensed journeyman electrician for substation work isn't the same hire as an electrician doing in-building power distribution. A liquid cooling HVAC specialist needs hands-on DeltaFlow~ experience. A commissioning engineer's profile changes based on whether they're working on phase 1 or phase 3.</p>
+      <p>You build 23 distinct sourcing contexts — each with its own required tasks, skills, and proficiency depth. Your ATS can't hold this nuance, so you document it in a shared framework your team can act on.</p>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Roles mapped</div>
+          <div class="stat-value green">23 / 23</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Sourcing contexts</div>
+          <div class="stat-value green">23 unique</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Time invested</div>
+          <div class="stat-value amber">90 min</div>
+        </div>
+      </div>
+      <p>Now you need to source into the DFW market. But the labor pool is segmented. Semiconductor plant electricians in Sherman have transferable high-voltage skills. Oil & gas field techs near Midland are being displaced — and they want stable work. Adjacent market pipelines look promising.</p>
+    </div>
+    <div class="divider"></div>
+    <div class="choices">
+      <div class="choice-label">How do you reach the right candidates?</div>
+      <button class="choice-btn primary" onclick="go('scene-2a')">
+        <span class="choice-num">A</span>
+        <span>Personalize outreach to each labor pool segment with context-specific messaging</span>
+        <span class="choice-arrow">→</span>
+      </button>
+      <button class="choice-btn danger-btn" onclick="go('scene-2b')">
+        <span class="choice-num">B</span>
+        <span>Blast a single "Now Hiring — Great Pay!" message across all channels</span>
+        <span class="choice-arrow">→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- SCENE 1B: Bad path — same template -->
+  <div class="scene fade-in" id="scene-1b">
+    <div class="scene-header">
+      <span class="ep-badge">Chapter 2 of 5</span>
+      <div class="progress-bar"><div class="progress-fill" style="width:28%"></div></div>
+    </div>
+    <div class="scene-body fade-in">
+      <div class="context-tag bad">Warning: Generic workflow activated</div>
+      <h2 class="scene-title">The postings go live. 847 applications arrive in 72 hours.</h2>
+      <p>Your inbox is full. But almost immediately, your recruiters notice the problem: the applications are all over the place. A hospitality manager applied for the MEP engineer role. A residential HVAC tech with zero commercial experience applied for the liquid cooling specialist position. You're screening for the wrong signals because your job template described the same role 23 times with slightly different titles.</p>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Applications</div>
+          <div class="stat-value amber">847</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Qualified rate</div>
+          <div class="stat-value red">6.2%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Recruiter hours burned</div>
+          <div class="stat-value red">140+</div>
+        </div>
+      </div>
+      <p>You've created noise, not a pipeline. Marcus is checking in. The Q3 deadline hasn't moved. You have two choices now.</p>
+    </div>
+    <div class="outcome-panel bad">
+      <div class="outcome-title">What went wrong</div>
+      <p>Generic workflows produce generic candidates. When a substation electrician and a mechanical commissioning engineer look the same to your system, your pipeline fills with the wrong people. Context wasn't embedded — it was ignored.</p>
+    </div>
+    <div class="choices">
+      <div class="choice-label">Recover or double down?</div>
+      <button class="choice-btn primary" onclick="go('scene-1a')">
+        <span class="choice-num">↩</span>
+        <span>Go back and map each role's context before continuing</span>
+        <span class="choice-arrow">→</span>
+      </button>
+      <button class="choice-btn danger-btn" onclick="go('scene-fail')">
+        <span class="choice-num">→</span>
+        <span>Keep screening manually — maybe enough quality candidates are in there</span>
+        <span class="choice-arrow">→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- SCENE 1C: Agency path -->
+  <div class="scene fade-in" id="scene-1c">
+    <div class="scene-header">
+      <span class="ep-badge">Chapter 2 of 5</span>
+      <div class="progress-bar"><div class="progress-fill" style="width:28%"></div></div>
+    </div>
+    <div class="scene-body fade-in">
+      <div class="context-tag warn">Caution: Outsourced context</div>
+      <h2 class="scene-title">The agencies say yes. Their price tag: $2.4M in placement fees.</h2>
+      <p>You've bought time — but not control. Each agency has its own candidate pool, its own definition of "qualified," and none of them understands the nuances of liquid cooling HVAC or the DeltaFlow~ system your campus will run. One agency keeps sending you residential electricians. Another is pulling candidates from a Phoenix pipeline who won't relocate.</p>
+      <p>Three weeks in, you've filled 8 of 23 roles. Six of those hires have already flagged that the role they were told about doesn't match what they're actually doing on-site.</p>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Roles filled</div>
+          <div class="stat-value amber">8 / 23</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Projected agency spend</div>
+          <div class="stat-value red">$2.4M</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Early attrition risk</div>
+          <div class="stat-value red">High</div>
+        </div>
+      </div>
+      <p>You still need to own this pipeline. The agencies can supplement, but they can't replace your strategy.</p>
+    </div>
+    <div class="outcome-panel neutral">
+      <div class="outcome-title">What you've learned</div>
+      <p>Agencies fill volume. They can't fill context. Without a role-specific sourcing strategy, you're paying for candidates who fit someone else's template — not yours.</p>
+    </div>
+    <div class="choices">
+      <div class="choice-label">Take back control</div>
+      <button class="choice-btn primary" onclick="go('scene-1a')">
+        <span class="choice-num">→</span>
+        <span>Build your own role-context framework alongside the agencies</span>
+        <span class="choice-arrow">→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- SCENE 2A: Personalized outreach -->
+  <div class="scene fade-in" id="scene-2a">
+    <div class="scene-header">
+      <span class="ep-badge">Chapter 3 of 5</span>
+      <div class="progress-bar"><div class="progress-fill" style="width:52%"></div></div>
+    </div>
+    <div class="scene-body fade-in">
+      <div class="context-tag">Hypercell elements unlocked: Role + Market + Moment</div>
+      <h2 class="scene-title">You write three different messages for three different people.</h2>
+      <p>To the semiconductor electrician in Sherman: <strong>"The substation skills you built at TI translate directly to hyperscale infrastructure work — and this campus offers long-term stability that chipmaker contracts don't."</strong></p>
+      <p>To the displaced oil & gas tech near Midland: <strong>"The high-voltage systems you've maintained in the field map almost exactly to what we need — and this is permanent work, not a contract gig."</strong></p>
+      <p>To the HVAC tech from a neighboring campus build: <strong>"You already know how liquid cooling works at scale. We're building that environment — and we want someone who doesn't need six months of ramp time."</strong></p>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Response rate</div>
+          <div class="stat-value green">34%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Qualified pipeline</div>
+          <div class="stat-value green">78 candidates</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Time to pipeline</div>
+          <div class="stat-value amber">6 days</div>
+        </div>
+      </div>
+      <p>The pipeline is real. Now you have to move them through quickly — but the commissioning team just flagged a compliance issue. Texas has specific licensing requirements for high-voltage infrastructure work that two of your top candidates don't meet. You could move fast and deal with it later. Or you could embed compliance into every candidate evaluation from here on.</p>
+    </div>
+    <div class="divider"></div>
+    <div class="choices">
+      <div class="choice-label">Compliance vs. speed</div>
+      <button class="choice-btn primary" onclick="go('scene-3a')">
+        <span class="choice-num">A</span>
+        <span>Build compliance checks into the screening process for every role, every market</span>
+        <span class="choice-arrow">→</span>
+      </button>
+      <button class="choice-btn danger-btn" onclick="go('scene-3b')">
+        <span class="choice-num">B</span>
+        <span>Move the candidates through now — sort out licensing issues on-site</span>
+        <span class="choice-arrow">→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- SCENE 2B: Mass blast bad -->
+  <div class="scene fade-in" id="scene-2b">
+    <div class="scene-header">
+      <span class="ep-badge">Chapter 3 of 5</span>
+      <div class="progress-bar"><div class="progress-fill" style="width:52%"></div></div>
+    </div>
+    <div class="scene-body fade-in">
+      <div class="context-tag bad">Warning: Context collapsed</div>
+      <h2 class="scene-title">"Now Hiring — Great Pay!" reaches 4,200 people. 11 respond.</h2>
+      <p>The DFW trades market is tight. Skilled workers get this message a dozen times a week. Without context — without speaking to the specific work, the specific site, the specific reason this job fits their background — you're invisible.</p>
+      <p>The 11 who do respond are mostly unqualified. The semiconductor electrician who would have been perfect never opened your message. The displaced oil & gas tech saw the generic subject line and deleted it.</p>
+    </div>
+    <div class="outcome-panel bad">
+      <div class="outcome-title">What went wrong</div>
+      <p>Market context isn't optional when the labor supply is constrained. Speaking to the wrong moment — or no moment at all — is the fastest way to disappear in a competitive talent market.</p>
+    </div>
+    <div class="choices">
+      <div class="choice-label">Regroup</div>
+      <button class="choice-btn primary" onclick="go('scene-2a')">
+        <span class="choice-num">↩</span>
+        <span>Go back and segment your outreach by labor pool and moment</span>
+        <span class="choice-arrow">→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- SCENE 3A: Compliance embedded -->
+  <div class="scene fade-in" id="scene-3a">
+    <div class="scene-header">
+      <span class="ep-badge">Chapter 4 of 5</span>
+      <div class="progress-bar"><div class="progress-fill" style="width:76%"></div></div>
+    </div>
+    <div class="scene-body fade-in">
+      <div class="context-tag">Hypercell elements active: Role + Market + Moment + Policy</div>
+      <h2 class="scene-title">Compliance becomes invisible — it just travels with every candidate.</h2>
+      <p>You build a policy layer into your evaluation: every candidate is automatically checked against the Texas TDLR electrical licensing database, OSHA 30 construction certification, and site-specific PPE requirements before a human recruiter even sees their profile.</p>
+      <p>The two candidates who didn't meet requirements get a message within hours: a clear explanation of what's missing, what certifications would qualify them, and an invitation to reapply when complete. No one falls through a crack. No one makes it to an on-site walkthrough with a compliance gap.</p>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Compliance failures on-site</div>
+          <div class="stat-value green">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Screened pipeline (compliant)</div>
+          <div class="stat-value green">61 candidates</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Recruiter review time</div>
+          <div class="stat-value green">↓ 58%</div>
+        </div>
+      </div>
+      <p>Now you're in the home stretch. 61 qualified, compliant candidates for 23 roles. You need to schedule site walks and technical interviews — but the commissioning superintendent works 6am–2pm, most trades workers have the same schedule, and your recruiter team is in Austin. You have one week before Marcus calls asking for an update.</p>
+    </div>
+    <div class="divider"></div>
+    <div class="choices">
+      <div class="choice-label">Final coordination</div>
+      <button class="choice-btn primary" onclick="go('scene-win')">
+        <span class="choice-num">A</span>
+        <span>Automate scheduling with shift-awareness — candidate, recruiter, and site calendars synced</span>
+        <span class="choice-arrow">→</span>
+      </button>
+      <button class="choice-btn secondary" onclick="go('scene-almost')">
+        <span class="choice-num">B</span>
+        <span>Have your recruiter team manually coordinate all 61 candidate interviews by email</span>
+        <span class="choice-arrow">→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- SCENE 3B: Compliance shortcut fail -->
+  <div class="scene fade-in" id="scene-3b">
+    <div class="scene-header">
+      <span class="ep-badge">Chapter 4 of 5</span>
+      <div class="progress-bar"><div class="progress-fill" style="width:76%"></div></div>
+    </div>
+    <div class="scene-body fade-in">
+      <div class="context-tag bad">Warning: Compliance gap exposed</div>
+      <h2 class="scene-title">Week 6. A state inspector shows up at Lancaster.</h2>
+      <p>Two workers are on-site doing high-voltage installation without the required Texas TDLR journeyman license. Work stops. The superintendent calls you directly. The delay costs the project 11 days — which ripples into the Q3 deadline.</p>
+      <p>The workers weren't trying to cut corners. Nobody told them the requirement applied to this site in this state. Your hiring workflow had no policy layer — compliance was assumed, not verified.</p>
+    </div>
+    <div class="outcome-panel bad">
+      <div class="outcome-title">What went wrong</div>
+      <p>Policy context isn't a legal department problem — it's a hiring workflow problem. When compliance isn't embedded at the sourcing and screening layer, it becomes a construction-site crisis.</p>
+    </div>
+    <div class="choices">
+      <div class="choice-label">Recover</div>
+      <button class="choice-btn primary" onclick="go('scene-3a')">
+        <span class="choice-num">↩</span>
+        <span>Rebuild with compliance embedded into every role evaluation</span>
+        <span class="choice-arrow">→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- SCENE WIN -->
+  <div class="scene fade-in" id="scene-win">
+    <div class="scene-header">
+      <span class="ep-badge">Outcome · Full Hypercell</span>
+      <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+    </div>
+    <div class="scene-body fade-in">
+      <div class="context-tag">All 6 hypercell elements active</div>
+      <h2 class="scene-title">Week 12. 23 roles filled. Campus goes live on schedule.</h2>
+      <p>Marcus sends a Slack message: <strong>"Don't know how you did it in this market. Whatever you did — document it."</strong></p>
+      <p>You did document it. The framework you built — role-specific sourcing contexts, market-segmented outreach, embedded compliance, automated scheduling — didn't just fill these roles. It became your operating model for every future site.</p>
+    </div>
+    <div class="hypercell-reveal">
+      <div class="hc-label">Hypercell elements you activated</div>
+      <div class="hc-elements">
+        <span class="hc-chip active">Role Context</span>
+        <span class="hc-chip active">Market Intelligence</span>
+        <span class="hc-chip active">Moment Awareness</span>
+        <span class="hc-chip active">Policy Layer</span>
+        <span class="hc-chip active">Scheduling Automation</span>
+        <span class="hc-chip active">Strategic Coordination</span>
+      </div>
+    </div>
+    <div class="stat-row" style="margin: 0 32px 20px;">
+      <div class="stat-card">
+        <div class="stat-label">Roles filled on time</div>
+        <div class="stat-value green">23 / 23</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Time-to-fill</div>
+        <div class="stat-value green">11.4 weeks</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">vs. industry avg</div>
+        <div class="stat-value green">↓ 38%</div>
+      </div>
+    </div>
+    <div class="final-cta">
+      <h3>This is what a hypercell hiring model looks like in practice.</h3>
+      <p>Every role, every market, every moment — operating as its own intelligent unit.</p>
+      <button class="cta-btn" onclick="sendPrompt('I want to see how Phenom could build a hypercell model for my specific hiring context')">See how Phenom builds this ↗</button>
+      <button class="restart-btn" onclick="go('scene-0')">Play again</button>
+    </div>
+  </div>
+
+  <!-- SCENE ALMOST (manual scheduling) -->
+  <div class="scene fade-in" id="scene-almost">
+    <div class="scene-header">
+      <span class="ep-badge">Outcome · Near Miss</span>
+      <div class="progress-bar"><div class="progress-fill" style="width:95%"></div></div>
+    </div>
+    <div class="scene-body fade-in">
+      <div class="context-tag warn">Outcome: Delayed — but recoverable</div>
+      <h2 class="scene-title">Week 14. 19 of 23 roles filled. Still two weeks behind.</h2>
+      <p>Manual scheduling coordination across 61 candidates, three recruiters, and a superintendent who doesn't check email before noon burned 3 extra weeks. Four candidates — all highly qualified — dropped out mid-process. Two accepted competing offers. Two stopped responding after the third reschedule.</p>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Roles filled</div>
+          <div class="stat-value amber">19 / 23</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Candidates lost</div>
+          <div class="stat-value red">4</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Schedule slip</div>
+          <div class="stat-value red">+2 weeks</div>
+        </div>
+      </div>
+      <p>The strategy was right. The execution layer wasn't. Automation — shift-aware, multi-calendar, candidate-preferred channel — is what closes the last mile.</p>
+    </div>
+    <div class="final-cta">
+      <h3>Almost. The hypercell model isn't just a sourcing strategy — it's the full stack.</h3>
+      <p>Strategy + context + compliance + automation, coordinated as one operating unit.</p>
+      <button class="cta-btn" onclick="sendPrompt('Show me what the full hypercell model looks like end to end')">See the full model ↗</button>
+      <button class="restart-btn" onclick="go('scene-0')">Try again</button>
+    </div>
+  </div>
+
+  <!-- SCENE FAIL -->
+  <div class="scene fade-in" id="scene-fail">
+    <div class="scene-header">
+      <span class="ep-badge">Outcome · Failed</span>
+      <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+    </div>
+    <div class="scene-body fade-in">
+      <div class="context-tag bad">Outcome: Q3 deadline missed</div>
+      <h2 class="scene-title">Week 14. 9 of 23 roles filled. Marcus escalates to your CEO.</h2>
+      <p>Your recruiters spent 180 hours manually screening 847 applications. The qualified rate never improved. The candidates you needed — the ones with the right trade skills, the right market context, the right moment of career transition — were never in the pool. You didn't speak to them. Your system wasn't built to find them.</p>
+    </div>
+    <div class="outcome-panel bad">
+      <div class="outcome-title">The core issue</div>
+      <p>A generic system in a context-specific problem is a productivity trap. Volume without context generates noise. Speed without precision wastes time. The hypercell model exists for exactly this scenario — and you skipped it at every step.</p>
+    </div>
+    <div class="final-cta">
+      <h3>Ready to see how this plays out differently?</h3>
+      <p>Every choice in this story maps to a real hypercell element.</p>
+      <button class="cta-btn" onclick="go('scene-0')">Start over</button>
+      <button class="restart-btn" onclick="sendPrompt('Walk me through the hypercell framework and how Phenom applies it')">Learn the framework ↗</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function go(sceneId) {
+  document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+  const next = document.getElementById(sceneId);
+  if (next) {
+    next.classList.add('active');
+    next.classList.remove('fade-in');
+    void next.offsetWidth;
+    next.classList.add('fade-in');
+  }
+}
+</script>
